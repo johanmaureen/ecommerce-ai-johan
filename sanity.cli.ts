@@ -12,7 +12,6 @@ loadEnvConfig(process.cwd());
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
 const organizationId = process.env.NEXT_PUBLIC_SANITY_ORG_ID;
-const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_URL;
 
 if (!organizationId || !projectId || !dataset) {
   throw new Error(
@@ -20,16 +19,10 @@ if (!organizationId || !projectId || !dataset) {
   );
 }
 
-// For deployed apps, use the full URL; for local dev, use the file path
-const entry =
-  vercelUrl && vercelUrl !== "localhost"
-    ? `https://${vercelUrl}/admin`
-    : "./app/(admin)/admin/page.tsx";
-
 export default defineCliConfig({
   app: {
     organizationId,
-    entry,
+    entry: "./app/(admin)/admin/page.tsx",
   },
   api: { projectId, dataset },
 });
