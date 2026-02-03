@@ -5,6 +5,7 @@ import {
   useContext,
   useRef,
   useEffect,
+  useState,
   type ReactNode,
 } from "react";
 import { useStore } from "zustand";
@@ -38,16 +39,32 @@ export const CartStoreProvider = ({
   initialState,
 }: CartStoreProviderProps) => {
   const storeRef = useRef<CartStoreApi | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   if (storeRef.current === null) {
     storeRef.current = createCartStore(initialState ?? defaultInitState);
   }
 
   // Manually trigger rehydration on the client after mount
-  // This prevents SSR hydration mismatches since localStorage isn't available on server
+  // Wait for rehydration to finish before rendering children so
+  // downstream effects (like clearing the cart on success) don't
+  // get overwritten by a late rehydrate.
   useEffect(() => {
-    storeRef.current?.persist.rehydrate();
+    let mounted = true;
+
+    (async () => {
+      await storeRef.current?.persist.rehydrate();
+      if (mounted) setHydrated(true);
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
+
+  // Don't render children until hydration completes to avoid a race
+  // where rehydrate overwrites newer actions (e.g. clearCart).
+  if (!hydrated) return null;
 
   return (
     <CartStoreContext.Provider value={storeRef.current}>
