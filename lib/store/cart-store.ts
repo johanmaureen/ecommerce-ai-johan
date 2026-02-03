@@ -47,14 +47,14 @@ export const createCartStore = (initState: CartState = defaultInitState) => {
         addItem: (item, quantity = 1) =>
           set((state) => {
             const existing = state.items.find(
-              (i) => i.productId === item.productId
+              (i) => i.productId === item.productId,
             );
             if (existing) {
               return {
                 items: state.items.map((i) =>
                   i.productId === item.productId
                     ? { ...i, quantity: i.quantity + quantity }
-                    : i
+                    : i,
                 ),
               };
             }
@@ -75,12 +75,26 @@ export const createCartStore = (initState: CartState = defaultInitState) => {
             }
             return {
               items: state.items.map((i) =>
-                i.productId === productId ? { ...i, quantity } : i
+                i.productId === productId ? { ...i, quantity } : i,
               ),
             };
           }),
 
-        clearCart: () => set({ items: [] }),
+        clearCart: () => {
+          set({ items: [] });
+          try {
+            if (typeof window !== "undefined" && window.localStorage) {
+              window.localStorage.setItem(
+                "cart-storage",
+                JSON.stringify({ items: [] }),
+              );
+            }
+          } catch (err) {
+            // non-fatal - log and continue
+            // eslint-disable-next-line no-console
+            console.error("Failed to synchronously persist cleared cart:", err);
+          }
+        },
         toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
         openCart: () => set({ isOpen: true }),
         closeCart: () => set({ isOpen: false }),
@@ -91,7 +105,7 @@ export const createCartStore = (initState: CartState = defaultInitState) => {
         skipHydration: true,
         // Only persist items, not UI state like isOpen
         partialize: (state) => ({ items: state.items }),
-      }
-    )
+      },
+    ),
   );
 };
